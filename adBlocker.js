@@ -1,9 +1,4 @@
-/**
- * Minified by jsDelivr using Terser v5.19.2.
- * Original file: /npm/ytpro@3.3.52/script.js
- *
- * Do NOT use SRI with dynamically generated files! More information: https://www.jsdelivr.com/using-sri-with-dynamic-files
- */
+
 var YTProVer = "3.3";
 if (null == ytprof1 && null == ytprov1)
   var ytprof1 = "",

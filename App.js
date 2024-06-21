@@ -1,83 +1,63 @@
-import React, { useRef, useState, useCallback } from "react";
-import { SafeAreaView, ScrollView, RefreshControl, StyleSheet, View } from "react-native";
+import React, { useState, useCallback } from "react";
+import {
+  SafeAreaView,
+  ScrollView,
+  RefreshControl,
+  StyleSheet,
+  View,
+} from "react-native";
 import { WebView } from "react-native-webview";
 import { StatusBar } from "expo-status-bar";
-import * as FileSystem from "expo-file-system";
-import { Asset } from "expo-asset";
 
 export default function App() {
   const [refreshing, setRefreshing] = useState(false);
   const [webViewKey, setWebViewKey] = useState(0);
-  const [localScript, setLocalScript] = useState(null);
-  const webViewRef = useRef(null);
-  const scrollViewRef = useRef(null);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    setWebViewKey(prevKey => prevKey + 1);
+    // Refresh WebView by changing the key
+    setWebViewKey((prevKey) => prevKey + 1);
     setRefreshing(false);
   }, []);
 
+  const injectedJavaScript = `
+  // Function to remove elements
+  function removeElementsByClassName(className) {
+      var elements = document.getElementsByClassName(className);
+      while (elements.length > 0) {
+          elements[0].parentNode.removeChild(elements[0]);
+      }
+          
+  }
+document.getElementsByTagName(' ytm-reel-shelf-renderer').remove()
 
-  const injectJavaScript = `
+  // Remove the ytm-pivot-bar-item-renderer elements
+  var pivotBarItems = document.getElementsByTagName('ytm-pivot-bar-item-renderer');
+  for (var i = pivotBarItems.length - 1; i >= 0; i--) {
+      var childDiv = pivotBarItems[i].querySelector('.pivot-bar-item-tab.pivot-shorts');
+      if (childDiv) {
+          pivotBarItems[i].parentNode.removeChild(pivotBarItems[i]);
+      }
+  }
 
-    // Function to remove elements
-    function removeElementsByClassName(className) {
-        var elements = document.getElementsByClassName(className);
-        while (elements.length > 0) {
-            elements[0].parentNode.removeChild(elements[0]);
-        }
-    }
-
-    // Remove the ytm-pivot-bar-item-renderer elements
-    var pivotBarItems = document.getElementsByTagName('ytm-pivot-bar-item-renderer');
-    for (var i = pivotBarItems.length - 1; i >= 0; i--) {
-        var childDiv = pivotBarItems[i].querySelector('.pivot-bar-item-tab.pivot-shorts');
-        if (childDiv) {
-            pivotBarItems[i].parentNode.removeChild(pivotBarItems[i]);
-        }
-    }
-
-    // Remove the ytm-reel-shelf-renderer elements
-    var reelShelfItems = document.getElementsByTagName('ytm-reel-shelf-renderer');
-    for (var i = reelShelfItems.length - 1; i >= 0; i--) {
-        reelShelfItems[i].parentNode.removeChild(reelShelfItems[i]);
-    }
-
-    true; // Note: this is required, or you'll sometimes get silent failures
- 
-
-    (function () {
-      var script = document.createElement('script');
-      script.src = './adBlocker.js';
-      document.body.appendChild(script);
-
-
-    })();
+  true; 
   `;
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView
-        ref={scrollViewRef}
         contentContainerStyle={styles.scrollView}
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            enabled={scrollViewRef.current ? scrollViewRef.current.scrollTop === 0 : true}
-          />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
         <View style={styles.container}>
           <WebView
             key={webViewKey}
-            ref={webViewRef}
             source={{ uri: "https://youtube.com" }}
-            onLoadEnd={() => {
-              if (webViewRef.current) {
-                webViewRef.current.injectJavaScript(injectJavaScript);
-              }
+            injectedJavaScript={injectedJavaScript}
+            onMessage={(event) => {
+              console.log(event.nativeEvent.data);
             }}
             style={styles.webview}
           />
@@ -101,6 +81,6 @@ const styles = StyleSheet.create({
   },
   webview: {
     flex: 1,
-    height: '100%', // Ensure the WebView takes the full height within the ScrollView
+    height: "100%", // Ensure the WebView takes the full height within the ScrollView
   },
 });
